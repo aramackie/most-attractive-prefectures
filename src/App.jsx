@@ -2,7 +2,7 @@ import Data from "./Most_Attractive_Prefectures.json";
 import * as d3 from "d3";
 import { useEffect, useState, useRef } from "react";
 
-const BumpChart = ({ prefecturesData, hoveredPrefs, setHoveredPrefs, labels, margin, contentWidth, contentHeight, color }) => {
+const BumpChart = ({ prefecturesData, hoveredPref, setHoveredPref, labels, margin, contentWidth, contentHeight, color }) => {
   const width = contentWidth + margin * 2;
   const height = contentHeight + margin * 2;
 
@@ -88,6 +88,7 @@ const BumpChart = ({ prefecturesData, hoveredPrefs, setHoveredPrefs, labels, mar
                   }}
                 >
                   <line x0='0' y0='0' x1='-5' y1='0' stroke='black' />
+                  <line x0='0' y0='0' x1={contentWidth} y1='0' stroke='#ccc' />
                   <text x='-10' y='5' textAnchor='end'>{i + 1}</text>
                 </g>
               )
@@ -113,14 +114,10 @@ const BumpChart = ({ prefecturesData, hoveredPrefs, setHoveredPrefs, labels, mar
                     r='5'
                     fill={prefColors[item.prefecture]}
                     strokeWidth="10px"
-                    stroke={hoveredPrefs[item.prefecture] ? prefColors[item.prefecture] : "0"}
+                    stroke={(item.prefecture === hoveredPref) ? prefColors[item.prefecture] : "0"}
                     style={{ transitionDuration: '1s' }}
-                    onMouseEnter={() => {
-                      setHoveredPrefs({ ...hoveredPrefs, [item.prefecture]: true });
-                    }}
-                    onMouseLeave={() => {
-                      setHoveredPrefs({ ...hoveredPrefs, [item.prefecture]: false });
-                    }}
+                    onMouseEnter={() => setHoveredPref(item.prefecture)}
+                    onMouseLeave={() => setHoveredPref(null)}
                   />
                 </g>
               );
@@ -137,22 +134,30 @@ const BumpChart = ({ prefecturesData, hoveredPrefs, setHoveredPrefs, labels, mar
               });
             }).flat().map((prefecture) => {
               return (
-                <path
-                  key={prefecture}
-                  d={line(dataByPref[prefecture])}
-                  stroke={prefColors[prefecture]}
-                  strokeWidth={hoveredPrefs[prefecture] ? "8px" : "3px"}
-                  fill="none"
-                  style={{ transitionDuration: '1s' }}
-                  strokeDasharray={prefSds[prefecture] * 1.5}
-                  onMouseEnter={() => {
-                    setHoveredPrefs({ ...hoveredPrefs, [prefecture]: true });
-                  }}
-                  onMouseLeave={() => {
-                    setHoveredPrefs({ ...hoveredPrefs, [prefecture]: false });
-                  }}
-                >
-                </path>
+                <g key={prefecture}>
+                  <path
+                    d={line(dataByPref[prefecture])}
+                    stroke={prefColors[prefecture]}
+                    strokeWidth={(prefecture === hoveredPref) ? "8px" : "3px"}
+                    fill="none"
+                    style={{ transitionDuration: '1s' }}
+                    strokeDasharray={prefSds[prefecture] * 1.5}
+                    onMouseEnter={() => setHoveredPref(prefecture)}
+                    onMouseLeave={() => setHoveredPref(null)}
+                  >
+                  </path>
+                  <path
+                    d={line(dataByPref[prefecture])}
+                    stroke={prefColors[prefecture]}
+                    strokeWidth="8px"
+                    strokeOpacity="0"
+                    fill="none"
+                    style={{ transitionDuration: '1s' }}
+                    onMouseEnter={() => setHoveredPref(prefecture)}
+                    onMouseLeave={() => setHoveredPref(null)}
+                  >
+                  </path>
+                </g>
               );
               dataByPref[prefecture];
 
@@ -188,7 +193,7 @@ const BulkSelecter = ({ prefecturesData, setPrefecturesData }) => {
   );
 };
 
-const Selecter = ({ prefecturesData, setPrefecturesData, hoveredPrefs, setHoveredPrefs, color }) => {
+const Selecter = ({ prefecturesData, setPrefecturesData, hoveredPref, setHoveredPref, color }) => {
   return (
     <ul style={{ marginTop: "0" }}>
       {
@@ -221,7 +226,13 @@ const Selecter = ({ prefecturesData, setPrefecturesData, hoveredPrefs, setHovere
                   {item.region}
                 </span>
               </label>
-              <PrefectureSelecter prefecturesData={prefecturesData} setPrefecturesData={setPrefecturesData} regionId={i} hoveredPrefs={hoveredPrefs} setHoveredPrefs={setHoveredPrefs} />
+              <PrefectureSelecter
+                prefecturesData={prefecturesData}
+                setPrefecturesData={setPrefecturesData}
+                regionId={i}
+                hoveredPref={hoveredPref}
+                setHoveredPref={setHoveredPref}
+              />
             </div>
           );
         })
@@ -230,25 +241,17 @@ const Selecter = ({ prefecturesData, setPrefecturesData, hoveredPrefs, setHovere
   );
 };
 
-const PrefectureSelecter = ({ prefecturesData, setPrefecturesData, regionId, hoveredPrefs, setHoveredPrefs }) => {
+const PrefectureSelecter = ({ prefecturesData, setPrefecturesData, regionId, hoveredPref, setHoveredPref }) => {
   return (
-    <ul
-      style={{ marginTop: "2px ", marginBottom: "10px " }}
-    >
+    <ul style={{ marginTop: "2px", marginBottom: "10px" }}>
       {
         prefecturesData[regionId].prefectures.map((item, i) => {
           return (
             <label
               className="checkbox"
               key={i}
-              onMouseEnter={() => {
-                setHoveredPrefs({ ...hoveredPrefs, [item.prefecture]: true });
-              }}
-              onMouseLeave={() => {
-                setHoveredPrefs(prefecturesData.map((region) => {
-                  return region.prefectures.map((prefecture) => [prefecture.prefecture, false])
-                }).flat());
-              }}
+              onMouseEnter={() => setHoveredPref(item.prefecture)}
+              onMouseLeave={() => setHoveredPref(null)}
               style={{ margin: "4px", userSelect: "none" }}
             >
               <span
@@ -256,8 +259,8 @@ const PrefectureSelecter = ({ prefecturesData, setPrefecturesData, regionId, hov
                 style={{
                   borderWidth: "2px",
                   borderStyle: "solid",
-                  borderColor: hoveredPrefs[item.prefecture] ? "rgb(0, 0, 0)" : "rgb(245, 245, 245)",
-                  backgroundColor: hoveredPrefs[item.prefecture] ? "rgb(200, 200, 200)" : "rgb(245, 245, 245)",
+                  borderColor: (item.prefecture === hoveredPref) ? "rgb(0, 0, 0)" : "rgb(245, 245, 245)",
+                  backgroundColor: (item.prefecture === hoveredPref) ? "rgb(200, 200, 200)" : "rgb(245, 245, 245)",
                 }}
               >
                 <input
@@ -299,7 +302,7 @@ const App = () => {
   }
   const defaultSelectedPrefs = ["茨城県", "福井県", "鳥取県", "徳島県", "佐賀県"];
   const [prefecturesData, setPrefecturesData] = useState([]);
-  const [hoveredPrefs, setHoveredPrefs] = useState({});
+  const [hoveredPref, setHoveredPref] = useState(null);
 
   useEffect(() => {
     Data.children.forEach((item, i) => {
@@ -326,11 +329,6 @@ const App = () => {
       item["regionId"] = regionNums.get(item.region);
       item["prefectureId"] = prefectureNums.get(item.prefecture);
     });
-    setHoveredPrefs(Object.fromEntries(
-      preformattedData.map((region) => {
-        return region.prefectures.map((prefecture) => [prefecture.prefecture, false])
-      }).flat()
-    ));
   }, []);
 
   const color = d3.scaleOrdinal(d3.schemeCategory10);
@@ -355,8 +353,8 @@ const App = () => {
             <div>
               <BumpChart
                 prefecturesData={prefecturesData}
-                hoveredPrefs={hoveredPrefs}
-                setHoveredPrefs={setHoveredPrefs}
+                hoveredPref={hoveredPref}
+                setHoveredPref={setHoveredPref}
                 labels={labels}
                 margin={60}
                 contentWidth={600}
@@ -369,8 +367,8 @@ const App = () => {
                 <Selecter
                   prefecturesData={prefecturesData}
                   setPrefecturesData={setPrefecturesData}
-                  hoveredPrefs={hoveredPrefs}
-                  setHoveredPrefs={setHoveredPrefs}
+                  hoveredPref={hoveredPref}
+                  setHoveredPref={setHoveredPref}
                   color={color}
                 />
                 <BulkSelecter
