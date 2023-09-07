@@ -10,10 +10,12 @@ const BumpChart = ({ prefecturesData, hoveredPrefs, setHoveredPrefs, labels, mar
     .domain(d3.extent(Data.children, (item) => item.year))
     .range([0, contentWidth])
     .nice();
+
+  const selectedPrefsData = Data.children.filter((item) => {
+    return prefecturesData[item.regionId].prefectures[item.prefectureId].isSelected
+  });
   const yScale = d3.scaleLinear()
-    .domain(d3.extent(Data.children.filter((item) => {
-      return prefecturesData[item.regionId].prefectures[item.prefectureId].isSelected
-    }), (item) => item.rank))
+    .domain((selectedPrefsData.length === 0) ? [1, 47] : d3.extent(selectedPrefsData, (item) => item.rank))
     .range([0, contentHeight])
     .nice();
 
@@ -178,10 +180,10 @@ const BulkSelecter = ({ prefecturesData, setPrefecturesData }) => {
   };
 
   return (
-    <div className="tags" style={{justifyContent: "flex-end"}}>
+    <div className="tags" style={{ justifyContent: "flex-end" }}>
       全都道府県の選択
-      <button type="button" className="button" style={{marginLeft: "10px"}} onClick={() => handleBulkSelected(true)}>ON</button>
-      <button type="button" className="button" style={{marginLeft: "10px"}} onClick={() => handleBulkSelected(false)}>OFF</button>
+      <button type="button" className="button" style={{ marginLeft: "10px" }} onClick={() => handleBulkSelected(true)}>ON</button>
+      <button type="button" className="button" style={{ marginLeft: "10px" }} onClick={() => handleBulkSelected(false)}>OFF</button>
     </div>
   );
 };
