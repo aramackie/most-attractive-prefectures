@@ -39,14 +39,14 @@ const BumpChart = ({ prefecturesData, hoveredPrefs, setHoveredPrefs, labels, mar
     .x((d) => xScale(d.year))
     .y((d) => yScale(d.rank))
 
-  
+
   const prefSds = {};
   prefecturesData.map((region) => region.prefectures.map((prefecture) => prefecture.prefecture)).flat().forEach((prefecture) => {
     prefSds[prefecture] = standardDeviation(dataByPref[prefecture].map((item) => item.rank));
   });
 
   return (
-    <svg width={width} height={height} style={{userSelect: "none"}}>
+    <svg width={width} height={height} style={{ userSelect: "none" }}>
       <g transform={`translate(${margin},${10})`}>
         <g transform={`translate(0,${contentHeight})`}>
           <line x0='0' y0='0' x1={contentWidth} y1='0' stroke='black' />
@@ -142,7 +142,7 @@ const BumpChart = ({ prefecturesData, hoveredPrefs, setHoveredPrefs, labels, mar
                   strokeWidth={hoveredPrefs[prefecture] ? "8px" : "3px"}
                   fill="none"
                   style={{ transitionDuration: '1s' }}
-                  strokeDasharray={prefSds[prefecture]*1.5}
+                  strokeDasharray={prefSds[prefecture] * 1.5}
                   onMouseEnter={() => {
                     setHoveredPrefs({ ...hoveredPrefs, [prefecture]: true });
                   }}
@@ -162,6 +162,30 @@ const BumpChart = ({ prefecturesData, hoveredPrefs, setHoveredPrefs, labels, mar
   );
 };
 
+const BulkSelecter = ({ prefecturesData, setPrefecturesData }) => {
+  const handleBulkSelected = (isSelected) => {
+    setPrefecturesData(prefecturesData.map((region) => {
+      return {
+        region: region.region,
+        prefectures: region.prefectures.map((prefecture) => {
+          return {
+            prefecture: prefecture.prefecture,
+            isSelected: isSelected
+          }
+        })
+      }
+    }));
+  };
+
+  return (
+    <div className="tags" style={{justifyContent: "flex-end"}}>
+      全都道府県の選択
+      <button type="button" className="button" style={{marginLeft: "10px"}} onClick={() => handleBulkSelected(true)}>ON</button>
+      <button type="button" className="button" style={{marginLeft: "10px"}} onClick={() => handleBulkSelected(false)}>OFF</button>
+    </div>
+  );
+};
+
 const Selecter = ({ prefecturesData, setPrefecturesData, hoveredPrefs, setHoveredPrefs, color }) => {
   return (
     <ul style={{ marginTop: "0" }}>
@@ -169,7 +193,7 @@ const Selecter = ({ prefecturesData, setPrefecturesData, hoveredPrefs, setHovere
         prefecturesData.map((item, i) => {
           return (
             <div key={i} style={{ backgroundColor: color(item.region), borderRadius: "4px" }}>
-              <label className="checkbox" key={i} style={{userSelect: "none"}}>
+              <label className="checkbox" key={i} style={{ userSelect: "none" }}>
                 <span className="tag is-black" style={{ margin: "4px" }}>
                   <input
                     type="checkbox"
@@ -219,9 +243,11 @@ const PrefectureSelecter = ({ prefecturesData, setPrefecturesData, regionId, hov
                 setHoveredPrefs({ ...hoveredPrefs, [item.prefecture]: true });
               }}
               onMouseLeave={() => {
-                setHoveredPrefs({ ...hoveredPrefs, [item.prefecture]: false });
+                setHoveredPrefs(prefecturesData.map((region) => {
+                  return region.prefectures.map((prefecture) => [prefecture.prefecture, false])
+                }).flat());
               }}
-              style={{ padding: "4px", userSelect: "none"}}
+              style={{ margin: "4px", userSelect: "none" }}
             >
               <span
                 className="tag"
@@ -277,32 +303,33 @@ const App = () => {
     Data.children.forEach((item, i) => {
       item["id"] = i
     });
-    const regions = new Set(Data.children.map((item) => item.region));
-    const regions2 = Array.from(regions).map((region) => ({ region: region, prefectures: [] }));
-    const regionNums = new Map(Array.from(regions).map((item, idx) => [item, idx]));
+    const regions = Array.from(new Set(Data.children.map((item) => item.region)));
+
+    const preformattedData = regions.map((region) => ({ region: region, prefectures: [] }));
+    const regionNums = new Map(regions.map((item, idx) => [item, idx]));
     const prefectures = new Map(Data.children.map((item) => [item.prefecture, item.region]));
     const prefectureNums = new Map();
     Array.from(prefectures.entries()).forEach((item) => {
-      regions2[regionNums.get(item[1])].prefectures.push(
+      preformattedData[regionNums.get(item[1])].prefectures.push(
         {
           prefecture: item[0],
           isSelected: defaultSelectedPrefs.includes(item[0])
         }
       );
-      prefectureNums.set(item[0], regions2[regionNums.get(item[1])].prefectures.length - 1);
+      prefectureNums.set(item[0], preformattedData[regionNums.get(item[1])].prefectures.length - 1);
     });
-    setPrefecturesData(regions2);
+    setPrefecturesData(preformattedData);
+
     Data.children.forEach((item) => {
       item["regionId"] = regionNums.get(item.region);
       item["prefectureId"] = prefectureNums.get(item.prefecture);
     });
     setHoveredPrefs(Object.fromEntries(
-      prefecturesData.map((region) => {
+      preformattedData.map((region) => {
         return region.prefectures.map((prefecture) => [prefecture.prefecture, false])
       }).flat()
     ));
   }, []);
-
 
   const color = d3.scaleOrdinal(d3.schemeCategory10);
   prefecturesData.forEach((region) => color(region));
@@ -344,6 +371,10 @@ const App = () => {
                   setHoveredPrefs={setHoveredPrefs}
                   color={color}
                 />
+                <BulkSelecter
+                  prefecturesData={prefecturesData}
+                  setPrefecturesData={setPrefecturesData}
+                />
               </div>
             </div>
           </div>
@@ -355,7 +386,7 @@ const App = () => {
 
 const standardDeviation = (data) => {
   const average = (data) => {
-    var sum = 0;
+    let sum = 0;
     for (let i = 0; i < data.length; i++) {
       sum = sum + data[i];
     }
@@ -363,15 +394,15 @@ const standardDeviation = (data) => {
   }
 
   const variance = (data) => {
-    var ave = average(data);
-    var varia = 0;
+    let ave = average(data);
+    let varia = 0;
     for (let i = 0; i < data.length; i++) {
       varia = varia + Math.pow(data[i] - ave, 2);
     }
     return (varia / data.length);
   }
 
-  var varia = variance(data);
+  let varia = variance(data);
   return Math.sqrt(varia);
 }
 
