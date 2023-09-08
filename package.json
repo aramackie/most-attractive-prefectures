@@ -18,6 +18,7 @@
     "react-dom": "^18.2.0"
   },
   "devDependencies": {
+    "@creativebulma/bulma-tooltip": "^1.2.0",
     "@vitejs/plugin-react": "^4.0.1",
     "vite": "^4.3.9"
   }

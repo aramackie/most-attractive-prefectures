@@ -2,11 +2,9 @@ export const BulkSelecter = ({ prefecturesData, setPrefecturesData }) => {
   const handleBulkSelected = (isSelected) => {
     setPrefecturesData(prefecturesData.map((region) => {
       return {
-        region: region.region,
-        prefectures: region.prefectures.map((prefecture) => {
+        ...region, prefectures: region.prefectures.map((prefecture) => {
           return {
-            prefecture: prefecture.prefecture,
-            isSelected: isSelected
+            ...prefecture, isSelected: isSelected
           }
         })
       }

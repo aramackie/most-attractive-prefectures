@@ -48,6 +48,9 @@ const BumpChart = ({ Data, prefecturesData, hoveredPref, setHoveredPref, labels,
 
   return (
     <svg width={width} height={height} style={{ userSelect: "none" }}>
+      <clipPath id="clip01">
+        <rect x="-110" y="-10" width={contentWidth + 130} height={contentHeight + 20} />
+      </clipPath>
       <g transform={`translate(${margin},${10})`}>
         <g transform={`translate(0,${contentHeight})`}>
           <line x0='0' y0='0' x1={contentWidth} y1='0' stroke='black' />
@@ -73,22 +76,18 @@ const BumpChart = ({ Data, prefecturesData, hoveredPref, setHoveredPref, labels,
           {
             prefecturesData.map((region) => region.prefectures.map((prefecture) => prefecture.prefecture)).flat().map((_, i) => {
               return (
-                <g
-                  key={i + 1}
-                  transform={`translate(0,${yScale(i + 1)})`}
-                  style={{
-                    transitionDuration: "1s",
-                    WebkitTransition: "all 1s",
-                    MozTransition: "all 1s",
-                    MsTransition: "all 1s",
-                    OTransition: "all 1s",
-                    transition: "all 1s",
-                    opacity: yScale.ticks().includes(i + 1) ? 1 : 0
-                  }}
-                >
-                  <line x0='0' y0='0' x1='-5' y1='0' stroke='black' />
-                  <line x0='0' y0='0' x1={contentWidth} y1='0' stroke='#ccc' />
-                  <text x='-10' y='5' textAnchor='end'>{i + 1}</text>
+                <g key={i + 1} clipPath="url(#clip01)" >
+                  <g
+                    transform={`translate(0,${yScale(i + 1)})`}
+                    style={{
+                      transitionDuration: '1s',
+                      opacity: yScale.ticks().includes(i + 1) ? 1 : 0
+                    }}
+                  >
+                    <line x0='0' y0='0' x1={contentWidth} y1='0' stroke='#ccc' />
+                    <line x0='0' y0='0' x1='-5' y1='0' stroke='black' />
+                    <text x='-10' y='5' textAnchor='end'>{i + 1}</text>
+                  </g>
                 </g>
               )
             })
@@ -100,66 +99,62 @@ const BumpChart = ({ Data, prefecturesData, hoveredPref, setHoveredPref, labels,
             {labels.y}
           </text>
         </g>
-        <g>
+        <g clipPath="url(#clip01)">
           {
-            Data.children.filter((item) => {
-              return prefecturesData[item.regionId].prefectures[item.prefectureId].isSelected;
-            }).map((item) => {
-              return (
-                <g key={item.id}>
-                  <circle
-                    cx={xScale(item.year)}
-                    cy={yScale(item.rank)}
-                    r='5'
-                    fill={prefColors[item.prefecture]}
-                    strokeWidth="10px"
-                    stroke={(item.prefecture === hoveredPref) ? prefColors[item.prefecture] : "0"}
-                    style={{ transitionDuration: '1s' }}
-                    onMouseEnter={() => setHoveredPref(item.prefecture)}
-                    onMouseLeave={() => setHoveredPref(null)}
-                  />
-                </g>
-              );
+            prefecturesData.map((region) => {
+              return region.prefectures.map((prefecture) => {
+                return prefecture.ranks.map((item) => {
+                  return (
+                    <g key={item.id}>
+                      <circle
+                        cx={xScale(item.year)}
+                        cy={yScale(item.rank)}
+                        r='5'
+                        fill={(prefecture.isSelected) ? prefColors[prefecture.prefecture] : "none"}
+                        strokeWidth="10px"
+                        stroke={(prefecture.prefecture === hoveredPref && prefecture.isSelected) ? prefColors[prefecture.prefecture] : "0"}
+                        style={{ transitionDuration: '1s' }}
+                        onMouseEnter={() => setHoveredPref(prefecture.isSelected ? prefecture.prefecture : null)}
+                        onMouseLeave={() => setHoveredPref(null)}
+                      />
+                    </g>
+                  );
+                });
+              });
             })
           }
         </g>
-        <g>
+        <g clipPath="url(#clip01)">
           {
-            prefecturesData.map((region, regionId) => {
-              return region.prefectures.filter((prefecture, prefectureId) => {
-                return prefecturesData[regionId].prefectures[prefectureId].isSelected
-              }).map((prefecture) => {
-                return prefecture.prefecture;
+            prefecturesData.map((region) => {
+              return region.prefectures.map((prefecture) => {
+                return (
+                  <g key={prefecture.prefecture}>
+                    <path
+                      d={line(prefecture.ranks)}
+                      stroke={(prefecture.isSelected) ? prefColors[prefecture.prefecture] : "none"}
+                      strokeWidth={(prefecture.prefecture === hoveredPref) ? "8px" : "3px"}
+                      fill="none"
+                      style={{ transitionDuration: '1s' }}
+                      strokeDasharray={prefSds[prefecture.prefecture] * 1.5}
+                      onMouseEnter={() => setHoveredPref(prefecture.isSelected ? prefecture.prefecture : null)}
+                      onMouseLeave={() => setHoveredPref(null)}
+                    >
+                    </path>
+                    <path
+                      d={line(prefecture.ranks)}
+                      stroke={prefColors[prefecture.prefecture]}
+                      strokeWidth="8px"
+                      strokeOpacity="0"
+                      fill="none"
+                      style={{ transitionDuration: '1s' }}
+                      onMouseEnter={() => setHoveredPref(prefecture.isSelected ? prefecture.prefecture : null)}
+                      onMouseLeave={() => setHoveredPref(null)}
+                    >
+                    </path>
+                  </g>
+                );
               });
-            }).flat().map((prefecture) => {
-              return (
-                <g key={prefecture}>
-                  <path
-                    d={line(dataByPref[prefecture])}
-                    stroke={prefColors[prefecture]}
-                    strokeWidth={(prefecture === hoveredPref) ? "8px" : "3px"}
-                    fill="none"
-                    style={{ transitionDuration: '1s' }}
-                    strokeDasharray={prefSds[prefecture] * 1.5}
-                    onMouseEnter={() => setHoveredPref(prefecture)}
-                    onMouseLeave={() => setHoveredPref(null)}
-                  >
-                  </path>
-                  <path
-                    d={line(dataByPref[prefecture])}
-                    stroke={prefColors[prefecture]}
-                    strokeWidth="8px"
-                    strokeOpacity="0"
-                    fill="none"
-                    style={{ transitionDuration: '1s' }}
-                    onMouseEnter={() => setHoveredPref(prefecture)}
-                    onMouseLeave={() => setHoveredPref(null)}
-                  >
-                  </path>
-                </g>
-              );
-              dataByPref[prefecture];
-
             })
           }
         </g>

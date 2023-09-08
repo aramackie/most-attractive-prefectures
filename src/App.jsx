@@ -33,6 +33,13 @@ const App = () => {
       );
       prefectureNums.set(item[0], preformattedData[regionNums.get(item[1])].prefectures.length - 1);
     });
+    Data.children.map((item) => {
+      const pref = preformattedData[regionNums.get(item.region)].prefectures[prefectureNums.get(item.prefecture)];
+      if (pref.ranks === undefined) {
+        pref.ranks = [];
+      }
+      pref.ranks.push({ year: item.year, rank: item.rank, id: item.id });
+    });
     setPrefecturesData(preformattedData);
 
     Data.children.forEach((item) => {
